@@ -71,7 +71,7 @@ def stream_logs():
             while True:
                 line = f.readline()
                 if line:
-                yield f"data: {line}\n\n"
+                    yield f"data: {line}\n\n"
                 sys.stdout.flush()  # Garante que os dados sejam enviados imediatamente
             else:
                 yield "data: keep-alive\n\n"  # Mantém a conexão aberta
