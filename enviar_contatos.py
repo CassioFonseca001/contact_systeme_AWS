@@ -14,11 +14,11 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
-        logging.FileHandler("logs/logs.txt", encoding="utf-8"),  # Salvar no arquivo de log
+        logging.FileHandler("logs/api_logs.txt", encoding="utf-8"),  # Novo log separado para API
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("api_logger")
 
 # Configuração da API
 URL = "https://api.systeme.io/api/contacts"

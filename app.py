@@ -6,7 +6,7 @@ import threading
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
-LOG_FILE = 'logs.txt'
+LOG_FILE = 'logs/api_logs.txt'  # Agora lendo os logs da API e não os logs do Flask
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -30,7 +30,7 @@ def upload_file():
     if file.filename == '':
         return jsonify({"error": "Nome do arquivo inválido"}), 400
 
-    # Limpa o logs.txt antes do novo upload
+    # Limpa os logs antes do novo upload
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         f.write("")
 
