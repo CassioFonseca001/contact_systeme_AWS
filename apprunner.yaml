@@ -1,0 +1,27 @@
+version: 1.0
+
+runtime: python3
+
+build:
+  commands:
+    - pip install -r requirements.txt
+
+run:
+  command: python app.py
+
+port: 5000
+
+healthcheck:
+  path: /
+  interval: 10
+  timeout: 5
+  healthy-threshold: 2
+  unhealthy-threshold: 3
+
+instance-configuration:
+  cpu: 2 vCPU
+  memory: 3 GB
+
+environment:
+  variables:
+    X_API_KEY: "uliwgfxc19o8p00i1nsm67wa8hze0q3nqklek6vivdjwbgyd0lt1wz2uc1h8l7z0"

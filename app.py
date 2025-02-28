@@ -13,7 +13,7 @@ API_URL = "https://api.systeme.io/api/contacts"
 HEADERS = {
     "accept": "application/json",
     "content-type": "application/json",
-    "X-API-Key": os.environ.get("X_API_KEY", "sua_chave_api")
+    "X-API-Key": os.environ.get("X_API_KEY")
 }
 LOCALE = "pt"
 
