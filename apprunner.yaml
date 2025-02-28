@@ -3,7 +3,6 @@ version: 1.0
 runtime: python3
 
 build:
-  runtime-version: 3.9
   command: pip install -r requirements.txt
 
 run:
