@@ -20,9 +20,14 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             text-align: center;
+            width: 350px;
         }
         input[type="file"] {
             margin: 10px 0;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
         button {
             background-color: #28a745;
@@ -31,9 +36,27 @@
             padding: 10px 20px;
             cursor: pointer;
             border-radius: 5px;
+            width: 100%;
         }
         button:hover {
             background-color: #218838;
+        }
+        .progress-container {
+            display: none;
+            width: 100%;
+            background: #ddd;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 10px;
+            background: #28a745;
+            border-radius: 5px;
+        }
+        #status-message {
+            margin-top: 10px;
+            font-weight: bold;
         }
     </style>
     <script>
@@ -41,6 +64,14 @@
             event.preventDefault(); // Impede o envio padrão do formulário
 
             let formData = new FormData(document.getElementById("upload-form"));
+            let progressContainer = document.getElementById("progress-container");
+            let progressBar = document.getElementById("progress-bar");
+            let statusMessage = document.getElementById("status-message");
+            let uploadButton = document.getElementById("upload-button");
+
+            uploadButton.disabled = true; // Evita múltiplos cliques
+            statusMessage.textContent = "Enviando...";
+            progressContainer.style.display = "block";
 
             fetch("/upload", {
                 method: "POST",
@@ -49,13 +80,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.message) {
-                    alert("Upload concluído! Redirecionando para a página de logs...");
-                    window.location.href = "/logs-page";  // Redireciona para a página de logs
+                    statusMessage.textContent = "✅ Upload concluído! Redirecionando...";
+                    progressBar.style.width = "100%";
+                    setTimeout(() => window.location.href = "/logs-page", 2000);
                 } else {
-                    alert("Erro no upload: " + (data.error || "Tente novamente."));
+                    statusMessage.textContent = "❌ Erro no upload: " + (data.error || "Tente novamente.");
+                    uploadButton.disabled = false;
                 }
             })
-            .catch(error => alert("Erro ao enviar arquivo: " + error));
+            .catch(error => {
+                statusMessage.textContent = "❌ Erro ao enviar: " + error;
+                uploadButton.disabled = false;
+            });
         }
     </script>
 </head>
@@ -65,8 +101,12 @@
         <form id="upload-form" onsubmit="uploadFile(event)" enctype="multipart/form-data">
             <input type="file" name="file" accept=".csv" required>
             <br>
-            <button type="submit">Carregar</button>
+            <button id="upload-button" type="submit">Carregar</button>
         </form>
+        <div class="progress-container" id="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p id="status-message"></p>
     </div>
 </body>
 </html>

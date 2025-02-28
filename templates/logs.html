@@ -87,11 +87,15 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
             }
         });
 
-        function atualizarGrafico() {
+        function atualizarGrafico(sucessos, erros) {
+            statusChart.data.datasets[0].data = [sucessos, erros];
             statusChart.update();
         }
 
@@ -105,25 +109,29 @@
                 let logLine = document.createElement("p");
                 logLine.textContent = log;
 
-                if (log.includes("Enviado com sucesso")) {
+                // Atualizar contador de sucessos
+                if (log.includes("✅")) {
                     totalEnviados++;
                     statusSucesso.textContent = totalEnviados;
                 }
 
+                // Atualizar contador de erros 422
                 if (log.includes("Erro 422")) {
                     totalErros++;
                     status422.textContent = totalErros;
                 }
 
+                // Atualizar total de linhas carregadas
                 if (log.includes("Total de linhas carregadas:")) {
-                    let valor = log.split(": ")[1];
+                    let valor = log.match(/\d+/)[0]; // Extrai apenas o número
                     totalLinhas.textContent = valor;
                 }
 
                 logContainer.appendChild(logLine);
-                logContainer.scrollTop = logContainer.scrollHeight;
-                statusChart.data.datasets[0].data = [totalEnviados, totalErros];
-                atualizarGrafico();
+                logContainer.scrollTop = logContainer.scrollHeight; // Scroll automático para os logs
+
+                // Atualizar o gráfico de pizza
+                atualizarGrafico(totalEnviados, totalErros);
             };
 
             eventSource.onerror = function() {

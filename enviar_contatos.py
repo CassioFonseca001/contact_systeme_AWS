@@ -3,7 +3,9 @@ import requests
 import pandas as pd
 import openpyxl
 import json
-from concurrent.futures import ThreadPoolExecutor
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 # Configuração da API
 URL = "https://api.systeme.io/api/contacts"
@@ -57,32 +59,56 @@ if "email" not in df.columns:
 # 🔹 Contadores
 total_linhas = len(df)
 status_422_count = 0
-status_sucesso_count = 0  # Contador de e-mails cadastrados com sucesso
+status_sucesso_count = 0  
+lock = Lock()  # 🔹 Lock para evitar concorrência em variáveis globais
 
-# Função para enviar email
+# Função para enviar email com tentativas
 def enviar_email(email):
     global status_sucesso_count, status_422_count
+    
     payload = {
         "email": email,
         "locale": LOCALE
     }
-    try:
-        response = requests.post(URL, json=payload, headers=HEADERS)
-        if response.status_code in range(200, 300):
-            escrever_log(f"✅ Enviado com sucesso para {email}")
-            status_sucesso_count += 1  # Contabiliza sucesso
-        elif response.status_code == 422:
-            mensagem_erro = tratar_erro_422(response.text)
-            escrever_log(f"⚠️ Erro 422 para {email}: {mensagem_erro}")
-            status_422_count += 1  # Contabiliza erro 422
-        else:
-            escrever_log(f"❌ Falha ao enviar {email} - Status: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        escrever_log(f"❌ Erro ao enviar {email}: {e}")
 
-# 🔹 Enviar e-mails em paralelo
-with ThreadPoolExecutor(max_workers=5) as executor:
-    executor.map(enviar_email, df["email"].dropna())
+    tentativas = 3
+    for tentativa in range(1, tentativas + 1):
+        try:
+            response = requests.post(URL, json=payload, headers=HEADERS, timeout=10)
+
+            if response.status_code in range(200, 300):
+                with lock:
+                    status_sucesso_count += 1  
+                escrever_log(f"✅ {email} cadastrado com sucesso na tentativa {tentativa}")
+                return
+            
+            elif response.status_code == 422:
+                mensagem_erro = tratar_erro_422(response.text)
+                with lock:
+                    status_422_count += 1  
+                escrever_log(f"⚠️ Erro 422 para {email}: {mensagem_erro}")
+                return  
+
+            else:
+                escrever_log(f"❌ Falha ao enviar {email} - Status: {response.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            escrever_log(f"❌ Erro ao enviar {email} na tentativa {tentativa}: {e}")
+
+        time.sleep(2)  # Espera antes de tentar novamente
+
+    escrever_log(f"❌ {email} falhou após {tentativas} tentativas.")
+
+# 🔹 Enviar e-mails em paralelo com um número otimizado de threads
+max_threads = min(10, len(df))  # Ajusta o número de threads conforme o tamanho da lista
+with ThreadPoolExecutor(max_workers=max_threads) as executor:
+    futures = {executor.submit(enviar_email, email): email for email in df["email"].dropna()}
+
+    for future in as_completed(futures):
+        try:
+            future.result()  # Garante que exceções dentro das threads sejam capturadas
+        except Exception as e:
+            escrever_log(f"❌ Erro inesperado: {e}")
 
 # 🔹 Registrar contagem total no final do log
 escrever_log(f"📌 Total de linhas carregadas: {total_linhas}")

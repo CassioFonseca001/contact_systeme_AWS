@@ -78,3 +78,7 @@ def stream_logs():
 @app.route('/logs-page')
 def logs_page():
     return render_template('logs.html')  # Exibe a página de logs
+
+if __name__ == "__main__":
+    # 🔹 Rodar em `0.0.0.0` para aceitar conexões externas no AWS
+    app.run(host="0.0.0.0", port=5000, debug=False)
