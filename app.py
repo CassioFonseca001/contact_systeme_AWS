@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 import threading
+import sys
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -42,7 +43,7 @@ def upload_file():
     # 🔹 Executar o processamento em SEGUNDO PLANO usando Thread
     def processar_arquivo():
         process = subprocess.Popen(
-            ['python3', 'enviar_contatos.py', filepath], 
+            [sys.executable, 'enviar_contatos.py', filepath], 
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
@@ -70,8 +71,11 @@ def stream_logs():
             while True:
                 line = f.readline()
                 if line:
-                    yield f"data: {line}\n\n"
-                time.sleep(1)  # Aguarda um pouco antes de verificar novamente
+                yield f"data: {line}\n\n"
+                sys.stdout.flush()  # Garante que os dados sejam enviados imediatamente
+            else:
+                yield "data: keep-alive\n\n"  # Mantém a conexão aberta
+                time.sleep(1)
 
     return Response(gerar_logs(), mimetype='text/event-stream')
 
