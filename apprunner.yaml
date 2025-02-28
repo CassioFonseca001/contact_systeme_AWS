@@ -20,7 +20,7 @@ healthcheck:
 
 instance-configuration:
   cpu: 2 vCPU
-  memory: 3 GB
+  memory: 4 GB
 
 environment:
   variables:
