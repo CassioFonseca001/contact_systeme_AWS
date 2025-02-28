@@ -62,26 +62,32 @@ def upload_file():
 
     return jsonify({"message": "Upload realizado com sucesso!", "log_url": "/logs-page"})
 
-@app.route('/stream-logs')
-def stream_logs():
-    """Faz streaming dos logs em tempo real para o frontend."""
-    def gerar_logs():
+@app.route('/get-logs')
+def get_logs():
+    """Retorna os últimos logs registrados nos últimos 30 segundos."""
+    try:
         with open(LOG_FILE, "r", encoding="utf-8") as f:
-            f.seek(0, os.SEEK_END)  # Vai direto para o final do arquivo
-            while True:
-                line = f.readline()
-                if line:
-                    yield f"data: {line}\n\n"
+            lines = f.readlines()
+        
+        # Filtra logs dos últimos 30 segundos
+        now = time.time()
+        filtered_logs = []
+        for line in reversed(lines):  # Lendo de trás para frente (mais rápido)
+            if "PM" in line or "AM" in line:  # Ajuste dependendo do formato do log
+                timestamp_str = line.split(" ")[0] + " " + line.split(" ")[1]
+                log_time = time.mktime(time.strptime(timestamp_str, "%m-%d-%Y %I:%M:%S %p"))
+                if now - log_time <= 30:  # Apenas logs dos últimos 30 segundos
+                    filtered_logs.append(line)
                 else:
-                    yield "data: keep-alive\n\n"  # 🔹 Mantém a conexão aberta
-                sys.stdout.flush()  # 🔹 Garante que os dados sejam enviados imediatamente
-                time.sleep(1)  # 🔹 Ajuste para não sobrecarregar o sistema
+                    break
 
-    return Response(gerar_logs(), mimetype='text/event-stream')
+        return jsonify({"logs": filtered_logs[::-1]})  # Retorna na ordem correta
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/logs-page')
 def logs_page():
     return render_template('logs.html')  # Exibe a página de logs
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080) 
