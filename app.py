@@ -1,93 +1,59 @@
-from flask import Flask, request, render_template, jsonify, Response
+import csv
+import io
+import json
 import os
-import subprocess
-import time
-import threading
-import sys
+import requests
+from flask import Flask, request, render_template, flash, redirect
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-LOG_FILE = 'logs/api_logs.txt'  # Agora lendo os logs da API e não os logs do Flask
+app.secret_key = os.environ.get("SECRET_KEY", "sua_chave_secreta")
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Configuração da API do Systeme.io
+API_URL = "https://api.systeme.io/api/contacts"
+HEADERS = {
+    "accept": "application/json",
+    "content-type": "application/json",
+    "X-API-Key": os.environ.get("X_API_KEY", "sua_chave_api")
+}
+LOCALE = "pt"
 
-def escrever_log(mensagem):
-    """Escreve logs no arquivo e imprime no console para depuração."""
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(mensagem + "\n")
-    print(mensagem)  # Para debug
-
-@app.route('/')
-def upload_form():
-    return render_template('upload.html')
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    """Recebe o arquivo CSV e inicia o processamento em segundo plano."""
-    if 'file' not in request.files:
-        return jsonify({"error": "Nenhum arquivo enviado"}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "Nome do arquivo inválido"}), 400
-
-    # Limpa os logs antes do novo upload
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write("")
-
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
-
-    escrever_log(f"🚀 Iniciando processamento do arquivo: {file.filename}")
-
-    # 🔹 Executar o processamento em SEGUNDO PLANO usando Thread
-    def processar_arquivo():
-        process = subprocess.Popen(
-            [sys.executable, 'enviar_contatos.py', filepath], 
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-
-        for line in iter(process.stdout.readline, ''):
-            escrever_log(line.strip())  # Escreve cada linha no log em tempo real
-            time.sleep(0.1)
-
-        process.stdout.close()
-        process.wait()
-
-        escrever_log("🚀 Processamento concluído!")
-
-    # Inicia a thread para processar sem travar o Flask
-    thread = threading.Thread(target=processar_arquivo)
-    thread.start()
-
-    return jsonify({"message": "Upload realizado com sucesso!", "log_url": "/logs-page"})
-
-@app.route('/get-logs')
-def get_logs():
-    """Retorna os últimos logs registrados nos últimos 30 segundos."""
-    try:
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+@app.route("/", methods=["GET", "POST"])
+def upload_csv():
+    if request.method == "POST":
+        if "csv_file" not in request.files:
+            flash("Nenhum arquivo enviado.", "error")
+            return redirect(request.url)
         
-        # Filtra logs dos últimos 30 segundos
-        now = time.time()
-        filtered_logs = []
-        for line in reversed(lines):  # Lendo de trás para frente (mais rápido)
-            if "PM" in line or "AM" in line:  # Ajuste dependendo do formato do log
-                timestamp_str = line.split(" ")[0] + " " + line.split(" ")[1]
-                log_time = time.mktime(time.strptime(timestamp_str, "%m-%d-%Y %I:%M:%S %p"))
-                if now - log_time <= 30:  # Apenas logs dos últimos 30 segundos
-                    filtered_logs.append(line)
+        file = request.files["csv_file"]
+        if file.filename == "":
+            flash("Nenhum arquivo selecionado.", "error")
+            return redirect(request.url)
+
+        try:
+            stream = io.StringIO(file.stream.read().decode("utf-8"))
+            csv_reader = csv.DictReader(stream)
+
+            for row in csv_reader:
+                payload = {
+                    "email": row.get("email"),
+                    "name": row.get("nome"),
+                    "locale": LOCALE
+                }
+                response = requests.post(API_URL, headers=HEADERS, json=payload)
+                
+                if response.status_code != 200:
+                    flash(f"Erro ao enviar {payload['email']}: {response.text}", "error")
                 else:
-                    break
+                    flash(f"Contato {payload['email']} enviado com sucesso!", "success")
 
-        return jsonify({"logs": filtered_logs[::-1]})  # Retorna na ordem correta
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            return redirect(request.url)
 
-@app.route('/logs-page')
-def logs_page():
-    return render_template('logs.html')  # Exibe a página de logs
+        except Exception as e:
+            flash(f"Erro ao processar o arquivo: {str(e)}", "error")
+            return redirect(request.url)
+
+    return render_template("index.html")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080) 
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
