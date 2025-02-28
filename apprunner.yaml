@@ -25,3 +25,4 @@ instance-configuration:
 environment:
   variables:
     X_API_KEY: "uliwgfxc19o8p00i1nsm67wa8hze0q3nqklek6vivdjwbgyd0lt1wz2uc1h8l7z0"
+    SECRET_KEY: "sua_chave_secreta"
