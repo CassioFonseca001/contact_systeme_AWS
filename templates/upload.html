@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de CSV</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+    <script>
+        function uploadFile(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            let formData = new FormData(document.getElementById("upload-form"));
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("Upload concluído! Redirecionando para a página de logs...");
+                    window.location.href = "/logs-page";  // Redireciona para a página de logs
+                } else {
+                    alert("Erro no upload: " + (data.error || "Tente novamente."));
+                }
+            })
+            .catch(error => alert("Erro ao enviar arquivo: " + error));
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload de Arquivo CSV</h2>
+        <form id="upload-form" onsubmit="uploadFile(event)" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv" required>
+            <br>
+            <button type="submit">Carregar</button>
+        </form>
+    </div>
+</body>
+</html>

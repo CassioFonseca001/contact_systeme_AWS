@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento de Logs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #log-container {
+            width: 80%;
+            height: 400px;
+            margin: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #f8f8f8;
+            overflow-y: scroll;
+            text-align: left;
+        }
+        .status-422 {
+            color: red;
+            font-weight: bold;
+        }
+        .status-sucesso {
+            color: green;
+            font-weight: bold;
+        }
+        .header-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 80%;
+            margin: auto;
+        }
+        .stats-table {
+            text-align: left;
+        }
+        .chart-container {
+            width: 250px;
+            height: 250px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <h2>Monitoramento de Logs</h2>
+    </div>
+
+    <div class="stats-container">
+        <table class="stats-table">
+            <tr><td><strong>📌 Total de Linhas Carregadas:</strong></td> <td><span id="total-linhas">0</span></td></tr>
+            <tr><td><strong>✅ Total de Sucessos:</strong></td> <td><span id="status-sucesso">0</span></td></tr>
+            <tr><td><strong>❌ Total de Erros 422:</strong></td> <td><span id="status-422">0</span></td></tr>
+        </table>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <div id="log-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        let logContainer = document.getElementById("log-container");
+        let totalLinhas = document.getElementById("total-linhas");
+        let statusSucesso = document.getElementById("status-sucesso");
+        let status422 = document.getElementById("status-422");
+
+        let ctx = document.getElementById("statusChart").getContext("2d");
+        let statusChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: ["Enviados", "Erros 422"],
+                datasets: [{
+                    label: "Status dos E-mails",
+                    data: [0, 0],
+                    backgroundColor: ["#28a745", "#dc3545"]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        function atualizarGrafico() {
+            statusChart.update();
+        }
+
+        function conectarStreamLogs() {
+            const eventSource = new EventSource("/stream-logs");
+            let totalEnviados = 0;
+            let totalErros = 0;
+
+            eventSource.onmessage = function(event) {
+                let log = event.data;
+                let logLine = document.createElement("p");
+                logLine.textContent = log;
+
+                if (log.includes("Enviado com sucesso")) {
+                    totalEnviados++;
+                    statusSucesso.textContent = totalEnviados;
+                }
+
+                if (log.includes("Erro 422")) {
+                    totalErros++;
+                    status422.textContent = totalErros;
+                }
+
+                if (log.includes("Total de linhas carregadas:")) {
+                    let valor = log.split(": ")[1];
+                    totalLinhas.textContent = valor;
+                }
+
+                logContainer.appendChild(logLine);
+                logContainer.scrollTop = logContainer.scrollHeight;
+                statusChart.data.datasets[0].data = [totalEnviados, totalErros];
+                atualizarGrafico();
+            };
+
+            eventSource.onerror = function() {
+                console.error("Erro na conexão com os logs.");
+                eventSource.close();
+            };
+        }
+
+        window.onload = conectarStreamLogs;
+    </script>
+</body>
+</html>
