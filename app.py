@@ -66,16 +66,16 @@ def upload_file():
 def stream_logs():
     """Faz streaming dos logs em tempo real para o frontend."""
     def gerar_logs():
-        """Lê e transmite os logs continuamente."""
         with open(LOG_FILE, "r", encoding="utf-8") as f:
+            f.seek(0, os.SEEK_END)  # Vai direto para o final do arquivo
             while True:
                 line = f.readline()
                 if line:
                     yield f"data: {line}\n\n"
-                sys.stdout.flush()  # Garante que os dados sejam enviados imediatamente
-            else:
-                yield "data: keep-alive\n\n"  # Mantém a conexão aberta
-                time.sleep(1)
+                else:
+                    yield "data: keep-alive\n\n"  # 🔹 Mantém a conexão aberta
+                sys.stdout.flush()  # 🔹 Garante que os dados sejam enviados imediatamente
+                time.sleep(1)  # 🔹 Ajuste para não sobrecarregar o sistema
 
     return Response(gerar_logs(), mimetype='text/event-stream')
 
