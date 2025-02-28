@@ -3,43 +3,18 @@ import os
 import subprocess
 import time
 import threading
-import logging
 
 app = Flask(__name__)
-
-# Diretórios e arquivos
 UPLOAD_FOLDER = 'uploads'
 LOG_FILE = 'logs.txt'
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Configuração do logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding="utf-8"),  # Salvar no arquivo
-        logging.StreamHandler()  # Exibir no console
-    ],
-)
-
-logger = logging.getLogger(__name__)
-
 def escrever_log(mensagem):
-    """Escreve logs no arquivo e exibe no console."""
-    logger.info(mensagem)
-
-@app.before_request
-def log_request_info():
-    """Registra informações da requisição antes de processá-la."""
-    logger.info(f"Request: {request.method} {request.path} - IP: {request.remote_addr}")
-
-@app.after_request
-def log_response_info(response):
-    """Registra o status de resposta após a requisição."""
-    logger.info(f"Response: {request.method} {request.path} - Status: {response.status_code}")
-    return response
+    """Escreve logs no arquivo e imprime no console para depuração."""
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(mensagem + "\n")
+    print(mensagem)  # Para debug
 
 @app.route('/')
 def upload_form():
