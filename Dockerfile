@@ -5,7 +5,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copia os arquivos de dependências para dentro do container
-COPY requirements.txt requirements.txt
+COPY requirements.txt .
 
 # Instala as dependências necessárias
 RUN pip install --no-cache-dir -r requirements.txt
