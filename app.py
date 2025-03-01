@@ -55,5 +55,5 @@ def upload_csv():
     return render_template("index.html")
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))  # Usa a porta 5000, compatível com App Runner
     app.run(host="0.0.0.0", port=port)
