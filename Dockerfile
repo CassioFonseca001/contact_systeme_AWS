@@ -7,8 +7,8 @@ WORKDIR /app
 # Copia os arquivos de dependências para dentro do container
 COPY requirements.txt .
 
-# Instala as dependências necessárias
-RUN pip install --no-cache-dir -r requirements.txt
+# Atualiza o pip e instala as dependências necessárias
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copia todos os arquivos do projeto para o diretório de trabalho
 COPY . .
@@ -16,5 +16,5 @@ COPY . .
 # Expor a porta usada pela aplicação Flask
 EXPOSE 5000
 
-# Define o comando para iniciar a aplicação no container
-CMD ["python", "app.py"]
+# Define o comando para iniciar a aplicação no container usando Gunicorn
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]

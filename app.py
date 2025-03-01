@@ -1,14 +1,14 @@
+import os
 import csv
 import io
 import json
-import os
 import requests
 from flask import Flask, request, render_template, flash, redirect
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "sua_chave_secreta")
+app.secret_key = os.environ.get("SECRET_KEY", "chave_secreta_padrao")
 
-# Configuração da API do Systeme.io
+# Configuração da API externa
 API_URL = "https://api.systeme.io/api/contacts"
 HEADERS = {
     "accept": "application/json",
@@ -17,6 +17,7 @@ HEADERS = {
 }
 LOCALE = "pt"
 
+# Página HTML para upload de arquivo CSV
 @app.route("/", methods=["GET", "POST"])
 def upload_csv():
     if request.method == "POST":
@@ -54,6 +55,7 @@ def upload_csv():
 
     return render_template("index.html")
 
+# Garantir que a aplicação escuta na porta correta
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Usa a porta 5000, compatível com App Runner
+    port = int(os.environ.get("PORT", 5000))  # Padrão do AWS App Runner
     app.run(host="0.0.0.0", port=port)
